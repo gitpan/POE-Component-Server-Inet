@@ -10,6 +10,7 @@ inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/POE/Component/Server/Inet.pm
+LICENSE
 Makefile.PL
 MANIFEST			This list of files
 META.yml
@@ -21,4 +22,3 @@ t/03_tcp_echo_multi.t
 t/04_tcp_fake_multi.t
 xt/99_pod.t
 xt/99_pod_coverage.t
-xt/99_test_kwalitee.t

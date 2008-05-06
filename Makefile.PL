@@ -6,6 +6,7 @@ version_from 'lib/POE/Component/Server/Inet.pm';
 abstract_from 'lib/POE/Component/Server/Inet.pm';
 license 'perl';
 author_tests 'xt';
+perl_version '5.000';
 build_requires 'Test::More' => 0.47;
 requires 'warnings::compat' => 0 if $] < 5.006;
 requires 'Socket' => 0;
