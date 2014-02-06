@@ -1,4 +1,6 @@
 package POE::Component::Server::Inet;
+$POE::Component::Server::Inet::VERSION = '0.06';
+#ABSTRACT: a super-server daemon implementation in POE
 
 use strict;
 use warnings;
@@ -6,9 +8,6 @@ use POE qw(Wheel::SocketFactory Wheel::Run Wheel::ReadWrite Filter::Stream);
 use Net::Netmask;
 use Socket;
 use Carp;
-use vars qw($VERSION);
-
-$VERSION = '0.04';
 
 sub spawn {
   my $package = shift;
@@ -85,20 +84,6 @@ sub del_tcp {
   $poe_kernel->call( $self->{session_id}, 'del_tcp', @_ );
 }
 
-=begin comment
-
-sub add_udp {
-  my $self = shift;
-  $poe_kernel->call( $self->{session_id}, 'add_udp', @_ );
-}
-
-sub del_udp {
-  my $self = shift;
-  $poe_kernel->call( $self->{session_id}, 'del_udp', @_ );
-}
-
-=end comment
-=cut
 
 sub _add_tcp {
   my ($kernel,$self) = @_[KERNEL,OBJECT];
@@ -168,52 +153,6 @@ sub _del_tcp {
   return;
 }
 
-=begin comment
-
-sub _add_udp {
-  my ($kernel,$self) = @_[KERNEL,OBJECT];
-  my $args;
-  if ( ref( $_[ARG0] ) eq 'HASH' ) {
-    $args = { %{ $_[ARG0] } };
-  } 
-  else {
-    $args = { @_[ARG0..$#_] };
-  }
-  unless ( defined $args->{port} ) { 
-    warn "You must specify a 'port' parameter\n";
-    return;
-  }
-  unless ( $args->{program} ) {
-    warn "You must specify a 'program' parameter\n";
-    return;
-  }
-  if ( defined $self->{udp_ports}->{ $args->{port} } ) {
-    warn "There already exists a UDP port definition for '$args->{port}'\n";
-    return;
-  }
-  if ( $args->{allow} and !$args->{allow}->isa('Net::Netmask') ) {
-    warn "'allow' parameter must be a Net::Netmask object, ignoring.\n";
-    delete $args->{allow};
-  }
-  if ( $args->{deny} and !$args->{deny}->isa('Net::Netmask') ) {
-    warn "'deny' parameter must be a Net::Netmask object, ignoring.\n";
-    delete $args->{deny};
-  }
-  my $proto = getprotobyname('udp');
-  my $paddr = sockaddr_in( $args->{port}, $args->{bindaddress} || INADDR_ANY );
-  socket( my $socket, PF_INET, SOCK_DGRAM, $proto) || carp "Couldn\'t create UDP socket\n";
-  bind( $socket, $paddr) || carp "Couldn\'t bind to UDP socket\n";
-  $args->{socket} = $socket;
-  $self->{udp_ports}->{ $args->{port} } = $args;
-  $kernel->select_read( $socket, '_get_datagram', $args->{port} );
-  return;
-}
-
-sub _del_udp {
-}
-
-=end comment
-=cut
 
 sub _accept_failed {
   my ($kernel,$self,$wheel_id) = @_[KERNEL,OBJECT,ARG3];
@@ -330,12 +269,21 @@ sub _wheel_error {
 sub _get_datagram {
 }
 
-1;
+qq[Inet in'it];
+
 __END__
+
+=pod
+
+=encoding UTF-8
 
 =head1 NAME
 
 POE::Component::Server::Inet - a super-server daemon implementation in POE
+
+=head1 VERSION
+
+version 0.06
 
 =head1 SYNOPSIS
 
@@ -382,12 +330,72 @@ POE::Component::Server::Inet - a super-server daemon implementation in POE
 
 =head1 DESCRIPTION
 
-POE::Component::Server::Inet is a Inetd ( L<http://en.wikipedia.org/wiki/Inetd> ) C<super-server>
-implementation in POE. It currently only supports TCP based connections.
+POE::Component::Server::Inet is an Inetd ( L<http://en.wikipedia.org/wiki/Inetd> ) C<super-server>
+implementation in L<POE>. It currently only supports TCP based connections.
 
 You may either specify programs to run or use coderefs.
 
 The component uses L<POE::Wheel::Run> to do its magic.
+
+=begin comment
+
+sub add_udp {
+  my $self = shift;
+  $poe_kernel->call( $self->{session_id}, 'add_udp', @_ );
+}
+
+sub del_udp {
+  my $self = shift;
+  $poe_kernel->call( $self->{session_id}, 'del_udp', @_ );
+}
+
+=end comment
+
+=begin comment
+
+sub _add_udp {
+  my ($kernel,$self) = @_[KERNEL,OBJECT];
+  my $args;
+  if ( ref( $_[ARG0] ) eq 'HASH' ) {
+    $args = { %{ $_[ARG0] } };
+  } 
+  else {
+    $args = { @_[ARG0..$#_] };
+  }
+  unless ( defined $args->{port} ) { 
+    warn "You must specify a 'port' parameter\n";
+    return;
+  }
+  unless ( $args->{program} ) {
+    warn "You must specify a 'program' parameter\n";
+    return;
+  }
+  if ( defined $self->{udp_ports}->{ $args->{port} } ) {
+    warn "There already exists a UDP port definition for '$args->{port}'\n";
+    return;
+  }
+  if ( $args->{allow} and !$args->{allow}->isa('Net::Netmask') ) {
+    warn "'allow' parameter must be a Net::Netmask object, ignoring.\n";
+    delete $args->{allow};
+  }
+  if ( $args->{deny} and !$args->{deny}->isa('Net::Netmask') ) {
+    warn "'deny' parameter must be a Net::Netmask object, ignoring.\n";
+    delete $args->{deny};
+  }
+  my $proto = getprotobyname('udp');
+  my $paddr = sockaddr_in( $args->{port}, $args->{bindaddress} || INADDR_ANY );
+  socket( my $socket, PF_INET, SOCK_DGRAM, $proto) || carp "Couldn\'t create UDP socket\n";
+  bind( $socket, $paddr) || carp "Couldn\'t bind to UDP socket\n";
+  $args->{socket} = $socket;
+  $self->{udp_ports}->{ $args->{port} } = $args;
+  $kernel->select_read( $socket, '_get_datagram', $args->{port} );
+  return;
+}
+
+sub _del_udp {
+}
+
+=end comment
 
 =head1 CONSTRUCTOR
 
@@ -442,16 +450,6 @@ Terminates the component. All connections and wheels are closed.
 
 =back
 
-=head1 AUTHOR
-
-Chris C<BinGOs> Williams <chris@bingosnet.co.uk>
-
-=head1 LICENSE
-
-Copyright C<(c)> Chris Williams
-
-This module may be used, modified, and distributed under the same terms as Perl itself. Please see the license that came with your Perl distribution for details.
-
 =head1 SEE ALSO
 
 L<POE>
@@ -460,4 +458,15 @@ L<http://en.wikipedia.org/wiki/Inetd>
 
 L<POE::Wheel::Run>
 
+=head1 AUTHOR
 
+Chris Williams <chris@bingosnet.co.uk>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2014 by Chris Williams.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
